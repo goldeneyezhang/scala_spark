@@ -14,21 +14,21 @@ object Recommend {
    def main(args:Array[String]):Unit={
      SetLogger
     val (ratings,movieTitle)=PrepareData()
-    val model=ALS.train(ratings,5,20,0.1)
+    val model=ALS.train(ratings,10,10,0.1)
      recommend(model,movieTitle)
    }
   def recommend(model:MatrixFactorizationModel,movieTitle:Map[Int,String])={
-    var choose=""
+    var choose="1"
     while(choose!="3"){//if 3,leave,stop running
-      print("please choose 1. input userid,recommend movie 2.input movieid,recommend user 3.leave")
+      println("please choose 1. input userid,recommend movie 2.input movieid,recommend user 3.leave")
       choose=readLine()
       if(choose=="1"){
-        print("please input userid")
+        println("please input userid")
         val inputUserID=readLine()
         RecommendMovies(model,movieTitle,inputUserID.toInt)
       }
       else if(choose=="2"){
-        print("please input movieid")
+        println("please input movieid")
         val inputMovieID=readLine()
         RecommendUsers(model,movieTitle,inputMovieID.toInt)
       }
@@ -50,7 +50,7 @@ object Recommend {
     val ratingsRDD=rawRatings.map{case Array(user,movie,rating)=>Rating(user.toInt,movie.toInt,rating.toDouble)}
     println("total "+ratingsRDD.count.toString()+" ratings")
     //2.create movie id and name map table
-    print("start read movie data")
+    println("start read movie data")
     val itemRDD=sc.textFile(new File(DataDir,"u.item").toString)
     val movieTitle=itemRDD.map(line=>line.split("\\|").take(2)).map(array=>(array(0).toInt,array(1))).collect().toMap
     //3.show data record count
@@ -64,7 +64,7 @@ object Recommend {
     val RecommendMovie=model.recommendProducts(inputUserID,10)
     var i=1
     println("userid="+inputUserID+"recommend movies")
-    RecommendMovie.foreach{r=>print(i.toString()+"."+movieTitle(r.product)+"score:"+r.rating.toString())
+    RecommendMovie.foreach{r=>println(i.toString()+"."+movieTitle(r.product)+"score:"+r.rating.toString())
      i+=1
   }
   }
@@ -72,7 +72,7 @@ object Recommend {
     val RecommendUser=model.recommendUsers(inputMovieID, 10)//inputMovieID recommend ten users
     var i=1
     println("movieid="+inputMovieID+"moviename"+movieTitle(inputMovieID.toInt)+"userids=")
-    RecommendUser.foreach{r=>print(i.toString+"userid:"+r.user+" score:"+r.rating)
+    RecommendUser.foreach{r=>println(i.toString+"userid:"+r.user+" score:"+r.rating)
      i+=1
     }
   }
