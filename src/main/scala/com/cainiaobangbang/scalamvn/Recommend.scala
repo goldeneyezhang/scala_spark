@@ -14,7 +14,7 @@ object Recommend {
    def main(args:Array[String]):Unit={
      SetLogger
     val (ratings,movieTitle)=PrepareData()
-    val model=ALS.train(ratings,10,10,0.1)
+    val model=ALS.train(ratings,20,15,0.1)
      recommend(model,movieTitle)
    }
   def recommend(model:MatrixFactorizationModel,movieTitle:Map[Int,String])={

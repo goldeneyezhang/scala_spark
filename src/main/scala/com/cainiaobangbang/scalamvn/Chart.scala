@@ -10,7 +10,7 @@ import org.jfree.chart.plot.DatasetRenderingOrder
 import org.jfree.chart.labels.StandardCategoryToolTipGenerator;
 import java.awt.BasicStroke
 object Chart {
-  def plotBarLIneChart(Title:String,xLabel:String,yBarLabel:String,yBarMin:Double,yBarMax:Double,yLineLabel:String,dataBarChart:DefaultCategoryDataset,dataLineChart:DefaultCategoryDataset):Unit={
+  def plotBarLineChart(Title:String,xLabel:String,yBarLabel:String,yBarMin:Double,yBarMax:Double,yLineLabel:String,dataBarChart:DefaultCategoryDataset,dataLineChart:DefaultCategoryDataset):Unit={
     //draw Bar Chart
     val chart=ChartFactory.createBarChart("",xLabel,yBarLabel,dataBarChart,org.jfree.chart.plot.PlotOrientation.VERTICAL,true,true,false)
     //get plot
