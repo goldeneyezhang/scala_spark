@@ -23,6 +23,19 @@ object RunDecisionTreeBinary {
     validationData.persist()
     testData.persist()
     println("=====train evaluation stage=====")
+    println()
+    println("是否需要进行参数调试(Y,N)?")
+    if(readLine()=="Y")
+    {
+      val model=parametersTunning(trainData,validationData)
+      println("=====测试阶段=====")
+      val auc=evaluateModel(model,testData)
+      println("使用testata测试最佳模型，结果AUC:"+auc)
+      println("=====预测数据=====")
+      PredictData(sc,model,categoriesMap)
+    }
+    else
+    {
     val model=trainEvaluate(trainData,validationData)
     println("=====test stage=====")
     val auc=evaluateModel(model,testData)
@@ -32,7 +45,7 @@ object RunDecisionTreeBinary {
     trainData.unpersist()
     validationData.unpersist()
     testData.unpersist()
-    
+    }
   }
    def SetLogger={
     Logger.getLogger("org").setLevel(Level.OFF)
@@ -110,5 +123,46 @@ object RunDecisionTreeBinary {
       case 1=>"长青网页(evergreen)";}}
       println("网址:   "+url+"==>预测:"+predictDesc)  
     }
+   }
+   def parametersTunning(trainData:RDD[LabeledPoint],validationData:RDD[LabeledPoint]):DecisionTreeModel={
+     println("----评估Impurity参数使用gini，entropy-----")
+     evaluateParameter(trainData,validationData,"impurity",Array("gini","entropy"),Array(10),Array(10))
+     println("-----评估MaxDepth参数使用(3,5,10,15,20)-----")
+     evaluateParameter(trainData,validationData,"maxDepth",Array("gini"),Array(3,5,10,15,20,25),Array(10))
+     println("-----评估maxBins参数使用(3,5,10,50,100,200)----")
+     evaluateParameter(trainData,validationData,"maxBins",Array("gini"),Array(10),Array(3,5,10,50,100,200))
+     println("-----所有参数交叉评估做出最好的参数组合-----")
+     val bestModel=evaluateAllParameter(trainData,validationData,Array("gini","entropy"),Array(3,5,10,15,20),Array(3,5,10,50,100))
+     return (bestModel)
+   }
+   def evaluateAllParameter(trainData:RDD[LabeledPoint],validationData:RDD[LabeledPoint],impurityArray:Array[String],maxdepthArray:Array[Int],maxBinsArray:Array[Int]):DecisionTreeModel={
+     val evaluationsArray=
+       for (impurity<-impurityArray;maxDepth<-maxdepthArray;maxBins<-maxBinsArray)
+         yield{
+         val (model,time)=trainModel(trainData,impurity,maxDepth,maxBins)
+         val auc=evaluateModel(model,validationData)
+         (impurity,maxDepth,maxBins,auc)
+       }
+     val BestEval=(evaluationsArray.sortBy(_._4).reverse)(0)
+     println("调教后最佳参数:impurity:"+BestEval._1+",maxDepth:"+BestEval._2+",maxBins:"+BestEval._3+",结果AUC="+BestEval._4)
+     val (bestModel,time)=trainModel(trainData.union(validationData),BestEval._1,BestEval._2,BestEval._3)
+     return bestModel
+   }
+   def evaluateParameter(trainData:RDD[LabeledPoint],validationData:RDD[LabeledPoint],evaluateParameter:String,impurityArray:Array[String],
+       maxdepthArray:Array[Int],maxBinsArray:Array[Int])={
+     var dataBarChart=new DefaultCategoryDataset()
+     var dataLineChart=new DefaultCategoryDataset()
+     for(impurity<-impurityArray;maxDepth<-maxdepthArray;maxBins<-maxBinsArray){
+       val(model,time)=trainModel(trainData,impurity,maxDepth,maxBins)
+       val auc=evaluateModel(model,validationData)
+       val parameterData=evaluateParameter match{
+         case "impurity"=>impurity;
+         case "maxDepth"=>maxDepth;
+         case "maxBins"=>maxBins
+       }
+       dataBarChart.addValue(auc,evaluateParameter,parameterData.toString())
+       dataLineChart.addValue(time,"Time",parameterData.toString())
+     }
+     Chart.plotBarLineChart("DecisionTree evaluations "+evaluateParameter,evaluateParameter,"AUC",0.58,0.7,"Time",dataBarChart,dataLineChart)
    }
 }
